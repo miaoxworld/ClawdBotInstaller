@@ -508,17 +508,23 @@ if len(guilds) > 5:
     echo ""
     echo -e "${YELLOW}4. 发送测试消息到频道...${NC}"
     
-    local message="🦞 **ClawdBot 测试消息**
-
-这是一条来自配置工具的测试消息。
-如果你看到这条消息，说明 Discord 机器人配置成功！
-
-时间: $(date '+%Y-%m-%d %H:%M:%S')"
+    # 使用单行消息避免 JSON 格式问题
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local message="🦞 **ClawdBot 测试消息** - 配置成功！时间: $timestamp"
+    
+    # 使用 python 正确编码 JSON
+    local json_payload
+    if command -v python3 &> /dev/null; then
+        json_payload=$(python3 -c "import json; print(json.dumps({'content': '$message'}))" 2>/dev/null)
+    else
+        # 备用方案：简单消息
+        json_payload="{\"content\": \"$message\"}"
+    fi
     
     local send_result=$(curl -s -X POST "https://discord.com/api/v10/channels/${channel_id}/messages" \
         -H "Authorization: Bot $token" \
         -H "Content-Type: application/json" \
-        -d "{\"content\": \"$message\"}" 2>/dev/null)
+        -d "$json_payload" 2>/dev/null)
     
     if echo "$send_result" | grep -q '"id"'; then
         log_info "测试消息发送成功！请检查 Discord 频道"
