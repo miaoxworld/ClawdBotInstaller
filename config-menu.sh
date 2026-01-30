@@ -1736,18 +1736,35 @@ config_discord() {
     print_divider
     echo ""
     
-    echo -e "${CYAN}配置步骤:${NC}"
-    echo "  1. 访问 https://discord.com/developers/applications"
-    echo "  2. 创建新应用，进入 Bot 页面"
-    echo "  3. 创建 Bot 并复制 Token"
-    echo "  4. 在 OAuth2 页面生成邀请链接"
-    echo "  5. 邀请机器人到你的服务器"
+    echo -e "${CYAN}第一步: 创建 Discord 应用和机器人${NC}"
+    echo ""
+    echo "  1. 访问 ${WHITE}https://discord.com/developers/applications${NC}"
+    echo "  2. 点击 ${WHITE}New Application${NC} 创建新应用"
+    echo "  3. 进入应用后，点击左侧 ${WHITE}Bot${NC} 菜单"
+    echo "  4. 点击 ${WHITE}Reset Token${NC} 生成并复制 Bot Token"
+    echo "  5. 开启 ${WHITE}Message Content Intent${NC} (重要!)"
+    echo ""
+    echo -e "${CYAN}第二步: 邀请机器人到服务器${NC}"
+    echo ""
+    echo "  1. 点击左侧 ${WHITE}OAuth2 → URL Generator${NC}"
+    echo "  2. Scopes 勾选: ${WHITE}bot${NC}"
+    echo "  3. Bot Permissions 勾选: ${WHITE}Send Messages, Read Message History${NC}"
+    echo "  4. 复制生成的 URL，在浏览器打开并选择服务器"
+    echo ""
+    echo -e "${CYAN}第三步: 获取频道 ID${NC}"
+    echo ""
+    echo "  1. 打开 Discord 客户端，进入 ${WHITE}用户设置 → 高级${NC}"
+    echo "  2. 开启 ${WHITE}开发者模式${NC}"
+    echo "  3. 右键点击你想让机器人响应的频道"
+    echo "  4. 点击 ${WHITE}复制频道 ID${NC}"
     echo ""
     print_divider
     echo ""
     
-    read -p "$(echo -e "${YELLOW}输入 Bot Token: ${NC}")" bot_token
-    read -p "$(echo -e "${YELLOW}输入频道 ID: ${NC}")" channel_id
+    echo -en "${YELLOW}输入 Bot Token: ${NC}"
+    read bot_token < "$TTY_INPUT"
+    echo -en "${YELLOW}输入频道 ID (右键频道→复制ID): ${NC}"
+    read channel_id < "$TTY_INPUT"
     
     if [ -n "$bot_token" ] && [ -n "$channel_id" ]; then
         
