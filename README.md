@@ -38,7 +38,7 @@
 ### 方式一：一键安装（推荐）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/miaoxworld/ClawdBotInstaller/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/miaoxworld/OpenClawInstaller/main/install.sh | bash
 ```
 
 安装脚本会自动：
@@ -53,8 +53,8 @@ curl -fsSL https://raw.githubusercontent.com/miaoxworld/ClawdBotInstaller/main/i
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/miaoxworld/ClawdBotInstaller.git
-cd ClawdBotInstaller
+git clone https://github.com/miaoxworld/OpenClawInstaller.git
+cd OpenClawInstaller
 
 # 2. 添加执行权限
 chmod +x install.sh config-menu.sh
@@ -86,7 +86,7 @@ openclaw gateway start
 bash ~/.openclaw/config-menu.sh
 
 # 或从 GitHub 下载运行
-curl -fsSL https://raw.githubusercontent.com/miaoxworld/ClawdBotInstaller/main/config-menu.sh | bash
+curl -fsSL https://raw.githubusercontent.com/miaoxworld/OpenClawInstaller/main/config-menu.sh | bash
 ```
 
 ## ✨ 功能特性
@@ -495,9 +495,9 @@ rm -rf ~/.openclaw
 
 - [OpenClaw 官网](https://clawd.bot)
 - [官方文档](https://clawd.bot/docs)
-- [安装工具仓库](https://github.com/miaoxworld/ClawdBotInstaller)
+- [安装工具仓库](https://github.com/miaoxworld/OpenClawInstaller)
 - [OpenClaw 主仓库](https://github.com/openclaw/openclaw)
-- [社区讨论](https://github.com/miaoxworld/ClawdBotInstaller/discussions)
+- [社区讨论](https://github.com/miaoxworld/OpenClawInstaller/discussions)
 
 ---
 
