@@ -2861,23 +2861,21 @@ config_minimax() {
     echo ""
     echo -e "${CYAN}选择模型:${NC}"
     echo ""
-    print_menu_item "1" "MiniMax-M2.7 (推荐，最新旗舰)" "⭐"
-    print_menu_item "2" "MiniMax-M2.7-highspeed (高速版)" "⚡"
-    print_menu_item "3" "MiniMax-M2.5" "🔹"
-    print_menu_item "4" "MiniMax-M2.5-highspeed" "🔹"
-    print_menu_item "5" "自定义模型名称" "✏️"
+    print_menu_item "1" "MiniMax-M3 (推荐，最新旗舰)" "⭐"
+    print_menu_item "2" "MiniMax-M2.7 (旧版稳定)" "🔹"
+    print_menu_item "3" "MiniMax-M2.7-highspeed (旧版高速)" "⚡"
+    print_menu_item "4" "自定义模型名称" "✏️"
     echo ""
 
-    read -p "$(echo -e "${YELLOW}请选择 [1-5] (默认: 1): ${NC}")" model_choice < "$TTY_INPUT"
+    read -p "$(echo -e "${YELLOW}请选择 [1-4] (默认: 1): ${NC}")" model_choice < "$TTY_INPUT"
     model_choice=${model_choice:-1}
 
     case $model_choice in
-        1) model="MiniMax-M2.7" ;;
-        2) model="MiniMax-M2.7-highspeed" ;;
-        3) model="MiniMax-M2.5" ;;
-        4) model="MiniMax-M2.5-highspeed" ;;
-        5) read -p "$(echo -e "${YELLOW}输入模型名称: ${NC}")" model < "$TTY_INPUT" ;;
-        *) model="MiniMax-M2.7" ;;
+        1) model="MiniMax-M3" ;;
+        2) model="MiniMax-M2.7" ;;
+        3) model="MiniMax-M2.7-highspeed" ;;
+        4) read -p "$(echo -e "${YELLOW}输入模型名称: ${NC}")" model < "$TTY_INPUT" ;;
+        *) model="MiniMax-M3" ;;
     esac
     
     # 保存到 OpenClaw 环境变量配置
@@ -5704,7 +5702,7 @@ ensure_openclaw_init() {
 # 为 MiniMax 写入官方兼容 provider 配置，避免旧版本出现 Unknown model
 ensure_minimax_provider_config() {
     local provider="$1"   # minimax|minimax-cn
-    local model="$2"      # MiniMax-M2.5 / MiniMax-M2.5-highspeed
+    local model="$2"      # MiniMax-M3 / MiniMax-M2.7 / MiniMax-M2.7-highspeed
     local config_file="$3"
     local base_url="https://api.minimax.io/anthropic"
     if [ "$provider" = "minimax-cn" ]; then
@@ -5729,11 +5727,12 @@ cfg.models.providers ||= {};
 const p = cfg.models.providers[provider] || {};
 const models = Array.isArray(p.models) ? p.models : [];
 const catalog = {
-  'MiniMax-M2.5': { name: 'MiniMax M2.5' },
-  'MiniMax-M2.5-highspeed': { name: 'MiniMax M2.5 Highspeed' },
+  'MiniMax-M3': { name: 'MiniMax M3' },
+  'MiniMax-M2.7': { name: 'MiniMax M2.7' },
+  'MiniMax-M2.7-highspeed': { name: 'MiniMax M2.7 Highspeed' },
 };
 const modelIds = new Set(models.map(m => m.id));
-for (const id of ['MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
+for (const id of ['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.7-highspeed']) {
   if (!modelIds.has(id)) {
     models.push({
       id,
@@ -5778,11 +5777,12 @@ cfg["models"].setdefault("providers", {})
 p = cfg["models"]["providers"].get(provider, {})
 models = p.get("models", []) if isinstance(p.get("models"), list) else []
 catalog = {
-    "MiniMax-M2.5": "MiniMax M2.5",
-    "MiniMax-M2.5-highspeed": "MiniMax M2.5 Highspeed",
+    "MiniMax-M3": "MiniMax M3",
+    "MiniMax-M2.7": "MiniMax M2.7",
+    "MiniMax-M2.7-highspeed": "MiniMax M2.7 Highspeed",
 }
 existing = {m.get("id") for m in models if isinstance(m, dict)}
-for mid in ("MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
+for mid in ("MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed"):
     if mid not in existing:
         models.append({
             "id": mid, "name": catalog.get(mid, mid), "reasoning": True, "input": ["text"],

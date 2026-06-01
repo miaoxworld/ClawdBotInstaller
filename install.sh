@@ -1352,7 +1352,7 @@ init_openclaw_config() {
 # 为 MiniMax 写入官方兼容 provider 配置，避免旧版本出现 Unknown model
 ensure_minimax_provider_config() {
     local provider="$1"   # minimax|minimax-cn
-    local model="$2"      # MiniMax-M2.5 / MiniMax-M2.5-highspeed
+    local model="$2"      # MiniMax-M3 / MiniMax-M2.7 / MiniMax-M2.7-highspeed
     local config_file="$3"
     local base_url="https://api.minimax.io/anthropic"
     if [ "$provider" = "minimax-cn" ]; then
@@ -1377,11 +1377,12 @@ cfg.models.providers ||= {};
 const p = cfg.models.providers[provider] || {};
 const models = Array.isArray(p.models) ? p.models : [];
 const catalog = {
-  'MiniMax-M2.5': { name: 'MiniMax M2.5' },
-  'MiniMax-M2.5-highspeed': { name: 'MiniMax M2.5 Highspeed' },
+  'MiniMax-M3': { name: 'MiniMax M3' },
+  'MiniMax-M2.7': { name: 'MiniMax M2.7' },
+  'MiniMax-M2.7-highspeed': { name: 'MiniMax M2.7 Highspeed' },
 };
 const modelIds = new Set(models.map(m => m.id));
-for (const id of ['MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
+for (const id of ['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.7-highspeed']) {
   if (!modelIds.has(id)) {
     models.push({
       id,
@@ -1426,11 +1427,12 @@ cfg["models"].setdefault("providers", {})
 p = cfg["models"]["providers"].get(provider, {})
 models = p.get("models", []) if isinstance(p.get("models"), list) else []
 catalog = {
-    "MiniMax-M2.5": "MiniMax M2.5",
-    "MiniMax-M2.5-highspeed": "MiniMax M2.5 Highspeed",
+    "MiniMax-M3": "MiniMax M3",
+    "MiniMax-M2.7": "MiniMax M2.7",
+    "MiniMax-M2.7-highspeed": "MiniMax M2.7 Highspeed",
 }
 existing = {m.get("id") for m in models if isinstance(m, dict)}
-for mid in ("MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
+for mid in ("MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed"):
     if mid not in existing:
         models.append({
             "id": mid, "name": catalog.get(mid, mid), "reasoning": True, "input": ["text"],
@@ -2427,14 +2429,16 @@ setup_ai_provider() {
             read_secret_input "${YELLOW}输入 API Key: ${NC}" AI_KEY
             echo ""
             echo "选择模型:"
-            echo "  1) MiniMax-M2.5 (推荐，官方)"
-            echo "  2) MiniMax-M2.5-highspeed (高速)"
-            echo "  3) 自定义模型名称"
-            echo -en "${YELLOW}选择模型 [1-3] (默认: 1): ${NC}"; read model_choice < "$TTY_INPUT"
+            echo "  1) MiniMax-M3 (推荐，最新旗舰)"
+            echo "  2) MiniMax-M2.7 (旧版稳定)"
+            echo "  3) MiniMax-M2.7-highspeed (旧版高速)"
+            echo "  4) 自定义模型名称"
+            echo -en "${YELLOW}选择模型 [1-4] (默认: 1): ${NC}"; read model_choice < "$TTY_INPUT"
             case $model_choice in
-                2) AI_MODEL="MiniMax-M2.5-highspeed" ;;
-                3) echo -en "${YELLOW}输入模型名称: ${NC}"; read AI_MODEL < "$TTY_INPUT" ;;
-                *) AI_MODEL="MiniMax-M2.5" ;;
+                2) AI_MODEL="MiniMax-M2.7" ;;
+                3) AI_MODEL="MiniMax-M2.7-highspeed" ;;
+                4) echo -en "${YELLOW}输入模型名称: ${NC}"; read AI_MODEL < "$TTY_INPUT" ;;
+                *) AI_MODEL="MiniMax-M3" ;;
             esac
             ;;
         13)
