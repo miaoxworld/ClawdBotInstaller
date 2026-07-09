@@ -2861,23 +2861,25 @@ config_minimax() {
     echo ""
     echo -e "${CYAN}选择模型:${NC}"
     echo ""
-    print_menu_item "1" "MiniMax-M2.7 (推荐，最新旗舰)" "⭐"
-    print_menu_item "2" "MiniMax-M2.7-highspeed (高速版)" "⚡"
-    print_menu_item "3" "MiniMax-M2.5" "🔹"
-    print_menu_item "4" "MiniMax-M2.5-highspeed" "🔹"
-    print_menu_item "5" "自定义模型名称" "✏️"
+    print_menu_item "1" "MiniMax-M3 (推荐，百万上下文)" "⭐"
+    print_menu_item "2" "MiniMax-M2.7" "🔹"
+    print_menu_item "3" "MiniMax-M2.7-highspeed (高速版)" "⚡"
+    print_menu_item "4" "MiniMax-M2.5" "🔹"
+    print_menu_item "5" "MiniMax-M2.5-highspeed" "🔹"
+    print_menu_item "6" "自定义模型名称" "✏️"
     echo ""
 
-    read -p "$(echo -e "${YELLOW}请选择 [1-5] (默认: 1): ${NC}")" model_choice < "$TTY_INPUT"
+    read -p "$(echo -e "${YELLOW}请选择 [1-6] (默认: 1): ${NC}")" model_choice < "$TTY_INPUT"
     model_choice=${model_choice:-1}
 
     case $model_choice in
-        1) model="MiniMax-M2.7" ;;
-        2) model="MiniMax-M2.7-highspeed" ;;
-        3) model="MiniMax-M2.5" ;;
-        4) model="MiniMax-M2.5-highspeed" ;;
-        5) read -p "$(echo -e "${YELLOW}输入模型名称: ${NC}")" model < "$TTY_INPUT" ;;
-        *) model="MiniMax-M2.7" ;;
+        1) model="MiniMax-M3" ;;
+        2) model="MiniMax-M2.7" ;;
+        3) model="MiniMax-M2.7-highspeed" ;;
+        4) model="MiniMax-M2.5" ;;
+        5) model="MiniMax-M2.5-highspeed" ;;
+        6) read -p "$(echo -e "${YELLOW}输入模型名称: ${NC}")" model < "$TTY_INPUT" ;;
+        *) model="MiniMax-M3" ;;
     esac
     
     # 保存到 OpenClaw 环境变量配置
@@ -5704,11 +5706,11 @@ ensure_openclaw_init() {
 # 为 MiniMax 写入官方兼容 provider 配置，避免旧版本出现 Unknown model
 ensure_minimax_provider_config() {
     local provider="$1"   # minimax|minimax-cn
-    local model="$2"      # MiniMax-M2.5 / MiniMax-M2.5-highspeed
+    local model="$2"      # MiniMax-M3 / MiniMax-M2.7 / MiniMax-M2.5
     local config_file="$3"
-    local base_url="https://api.minimax.io/anthropic"
+    local base_url="https://api.minimax.io/anthropic/v1"
     if [ "$provider" = "minimax-cn" ]; then
-        base_url="https://api.minimaxi.com/anthropic"
+        base_url="https://api.minimaxi.com/anthropic/v1"
     fi
 
     mkdir -p "$(dirname "$config_file")" 2>/dev/null || true
@@ -5729,19 +5731,23 @@ cfg.models.providers ||= {};
 const p = cfg.models.providers[provider] || {};
 const models = Array.isArray(p.models) ? p.models : [];
 const catalog = {
+  'MiniMax-M3': { name: 'MiniMax M3', cost: { input: 0.6, output: 2.4, cacheRead: 0.12 }, contextWindow: 1000000 },
+  'MiniMax-M2.7': { name: 'MiniMax M2.7' },
+  'MiniMax-M2.7-highspeed': { name: 'MiniMax M2.7 Highspeed' },
   'MiniMax-M2.5': { name: 'MiniMax M2.5' },
   'MiniMax-M2.5-highspeed': { name: 'MiniMax M2.5 Highspeed' },
 };
 const modelIds = new Set(models.map(m => m.id));
-for (const id of ['MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
+for (const id of ['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.7-highspeed', 'MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
   if (!modelIds.has(id)) {
+    const meta = catalog[id] || {};
     models.push({
       id,
-      name: (catalog[id] && catalog[id].name) || id,
+      name: meta.name || id,
       reasoning: true,
       input: ['text'],
-      cost: { input: 0.3, output: 1.2, cacheRead: 0.03, cacheWrite: 0.12 },
-      contextWindow: 200000,
+      cost: meta.cost || { input: 0.3, output: 1.2, cacheRead: 0.03, cacheWrite: 0.12 },
+      contextWindow: meta.contextWindow || 200000,
       maxTokens: 8192
     });
   }
@@ -5778,16 +5784,20 @@ cfg["models"].setdefault("providers", {})
 p = cfg["models"]["providers"].get(provider, {})
 models = p.get("models", []) if isinstance(p.get("models"), list) else []
 catalog = {
-    "MiniMax-M2.5": "MiniMax M2.5",
-    "MiniMax-M2.5-highspeed": "MiniMax M2.5 Highspeed",
+    "MiniMax-M3": {"name": "MiniMax M3", "cost": {"input": 0.6, "output": 2.4, "cacheRead": 0.12}, "contextWindow": 1000000},
+    "MiniMax-M2.7": {"name": "MiniMax M2.7"},
+    "MiniMax-M2.7-highspeed": {"name": "MiniMax M2.7 Highspeed"},
+    "MiniMax-M2.5": {"name": "MiniMax M2.5"},
+    "MiniMax-M2.5-highspeed": {"name": "MiniMax M2.5 Highspeed"},
 }
 existing = {m.get("id") for m in models if isinstance(m, dict)}
-for mid in ("MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
+for mid in ("MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
     if mid not in existing:
+        meta = catalog.get(mid, {})
         models.append({
-            "id": mid, "name": catalog.get(mid, mid), "reasoning": True, "input": ["text"],
-            "cost": {"input": 0.3, "output": 1.2, "cacheRead": 0.03, "cacheWrite": 0.12},
-            "contextWindow": 200000, "maxTokens": 8192
+            "id": mid, "name": meta.get("name", mid), "reasoning": True, "input": ["text"],
+            "cost": meta.get("cost", {"input": 0.3, "output": 1.2, "cacheRead": 0.03, "cacheWrite": 0.12}),
+            "contextWindow": meta.get("contextWindow", 200000), "maxTokens": 8192
         })
 cfg["models"]["providers"][provider] = {
     **(p if isinstance(p, dict) else {}),
