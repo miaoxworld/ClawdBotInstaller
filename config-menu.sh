@@ -2825,6 +2825,20 @@ config_minimax() {
     if [ "$region_choice" = "2" ]; then
         provider="minimax-cn"
     fi
+
+    echo ""
+    echo -e "${YELLOW}Select API protocol:${NC}"
+    print_menu_item "1" "Anthropic Messages (recommended)" "A"
+    print_menu_item "2" "OpenAI Chat Completions" "O"
+    echo ""
+
+    read -p "$(echo -e "${YELLOW}Select [1-2] (default: 1): ${NC}")" protocol_choice < "$TTY_INPUT"
+    protocol_choice=${protocol_choice:-1}
+
+    local api_type="anthropic-messages"
+    if [ "$protocol_choice" = "2" ]; then
+        api_type="openai-completions"
+    fi
     
     echo ""
     # 询问配置模式
@@ -2861,32 +2875,35 @@ config_minimax() {
     echo ""
     echo -e "${CYAN}选择模型:${NC}"
     echo ""
-    print_menu_item "1" "MiniMax-M2.7 (推荐，最新旗舰)" "⭐"
-    print_menu_item "2" "MiniMax-M2.7-highspeed (高速版)" "⚡"
-    print_menu_item "3" "MiniMax-M2.5" "🔹"
-    print_menu_item "4" "MiniMax-M2.5-highspeed" "🔹"
-    print_menu_item "5" "自定义模型名称" "✏️"
+    print_menu_item "1" "MiniMax-M3 (recommended, 1M context)" "*"
+    print_menu_item "2" "MiniMax-M2.7" "-"
+    print_menu_item "3" "MiniMax-M2.7-highspeed" ">"
+    print_menu_item "4" "MiniMax-M2.5" "-"
+    print_menu_item "5" "MiniMax-M2.5-highspeed" "-"
+    print_menu_item "6" "Custom model ID" "+"
     echo ""
 
-    read -p "$(echo -e "${YELLOW}请选择 [1-5] (默认: 1): ${NC}")" model_choice < "$TTY_INPUT"
+    read -p "$(echo -e "${YELLOW}Select [1-6] (default: 1): ${NC}")" model_choice < "$TTY_INPUT"
     model_choice=${model_choice:-1}
 
     case $model_choice in
-        1) model="MiniMax-M2.7" ;;
-        2) model="MiniMax-M2.7-highspeed" ;;
-        3) model="MiniMax-M2.5" ;;
-        4) model="MiniMax-M2.5-highspeed" ;;
-        5) read -p "$(echo -e "${YELLOW}输入模型名称: ${NC}")" model < "$TTY_INPUT" ;;
-        *) model="MiniMax-M2.7" ;;
+        1) model="MiniMax-M3" ;;
+        2) model="MiniMax-M2.7" ;;
+        3) model="MiniMax-M2.7-highspeed" ;;
+        4) model="MiniMax-M2.5" ;;
+        5) model="MiniMax-M2.5-highspeed" ;;
+        6) read -p "$(echo -e "${YELLOW}Enter model ID: ${NC}")" model < "$TTY_INPUT" ;;
+        *) model="MiniMax-M3" ;;
     esac
     
     # 保存到 OpenClaw 环境变量配置
-    save_openclaw_ai_config "$provider" "$api_key" "$model" ""
+    save_openclaw_ai_config "$provider" "$api_key" "$model" "" "$api_type"
     
     echo ""
     log_info "MiniMax 配置完成！"
     log_info "区域: $provider"
     log_info "模型: $model"
+    log_info "API protocol: $api_type"
     
     # 询问是否测试
     echo ""
@@ -5704,11 +5721,19 @@ ensure_openclaw_init() {
 # 为 MiniMax 写入官方兼容 provider 配置，避免旧版本出现 Unknown model
 ensure_minimax_provider_config() {
     local provider="$1"   # minimax|minimax-cn
-    local model="$2"      # MiniMax-M2.5 / MiniMax-M2.5-highspeed
+    local model="$2"
     local config_file="$3"
-    local base_url="https://api.minimax.io/anthropic"
+    local api_type="${4:-anthropic-messages}"
+    local api_host="https://api.minimax.io"
     if [ "$provider" = "minimax-cn" ]; then
-        base_url="https://api.minimaxi.com/anthropic"
+        api_host="https://api.minimaxi.com"
+    fi
+
+    local base_url="$api_host/anthropic"
+    if [ "$api_type" = "openai-completions" ]; then
+        base_url="$api_host/v1"
+    else
+        api_type="anthropic-messages"
     fi
 
     mkdir -p "$(dirname "$config_file")" 2>/dev/null || true
@@ -5721,6 +5746,7 @@ const file = '$config_file';
 const provider = '$provider';
 const model = '$model';
 const baseUrl = '$base_url';
+const apiType = '$api_type';
 let cfg = {};
 try { cfg = JSON.parse(fs.readFileSync(file, 'utf8')); } catch {}
 cfg.models ||= {};
@@ -5728,28 +5754,65 @@ cfg.models.mode ||= 'merge';
 cfg.models.providers ||= {};
 const p = cfg.models.providers[provider] || {};
 const models = Array.isArray(p.models) ? p.models : [];
+const m3PricingTiers = {
+  standard: {
+    upTo512k: { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0 },
+    above512k: { input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: 0 },
+  },
+  priority: {
+    upTo512k: { input: 0.45, output: 1.8, cacheRead: 0.09, cacheWrite: 0 },
+    above512k: { input: 0.9, output: 3.6, cacheRead: 0.18, cacheWrite: 0 },
+  },
+};
 const catalog = {
+  'MiniMax-M3': {
+    name: 'MiniMax M3',
+    input: ['text', 'image'],
+    cost: m3PricingTiers.standard.upTo512k,
+    contextWindow: 1000000,
+    maxTokens: 131072,
+  },
+  'MiniMax-M2.7': {
+    name: 'MiniMax M2.7',
+    input: ['text'],
+    cost: { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0.375 },
+    contextWindow: 204800,
+    maxTokens: 131072,
+  },
+  'MiniMax-M2.7-highspeed': {
+    name: 'MiniMax M2.7 Highspeed',
+    input: ['text'],
+    cost: { input: 0.6, output: 2.4, cacheRead: 0.06, cacheWrite: 0.375 },
+    contextWindow: 204800,
+    maxTokens: 131072,
+  },
   'MiniMax-M2.5': { name: 'MiniMax M2.5' },
   'MiniMax-M2.5-highspeed': { name: 'MiniMax M2.5 Highspeed' },
 };
-const modelIds = new Set(models.map(m => m.id));
-for (const id of ['MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
-  if (!modelIds.has(id)) {
-    models.push({
-      id,
-      name: (catalog[id] && catalog[id].name) || id,
-      reasoning: true,
-      input: ['text'],
-      cost: { input: 0.3, output: 1.2, cacheRead: 0.03, cacheWrite: 0.12 },
-      contextWindow: 200000,
-      maxTokens: 8192
-    });
+const modelIndexes = new Map(models.map((entry, index) => [entry.id, index]));
+for (const id of ['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.7-highspeed', 'MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
+  const meta = catalog[id] || {};
+  const definition = {
+    id,
+    name: meta.name || id,
+    reasoning: true,
+    input: meta.input || ['text'],
+    cost: meta.cost || { input: 0.3, output: 1.2, cacheRead: 0.03, cacheWrite: 0.12 },
+    contextWindow: meta.contextWindow || 200000,
+    maxTokens: meta.maxTokens || 8192
+  };
+  const index = modelIndexes.get(id);
+  if (index === undefined) {
+    modelIndexes.set(id, models.length);
+    models.push(definition);
+  } else if (meta.contextWindow) {
+    models[index] = { ...models[index], ...definition };
   }
 }
 cfg.models.providers[provider] = {
   ...p,
   baseUrl,
-  api: 'anthropic-messages',
+  api: apiType,
   authHeader: true,
   models
 };
@@ -5767,6 +5830,7 @@ file = os.path.expanduser("$config_file")
 provider = "$provider"
 model = "$model"
 base_url = "$base_url"
+api_type = "$api_type"
 try:
     with open(file, "r") as f:
         cfg = json.load(f)
@@ -5777,22 +5841,61 @@ cfg["models"].setdefault("mode", "merge")
 cfg["models"].setdefault("providers", {})
 p = cfg["models"]["providers"].get(provider, {})
 models = p.get("models", []) if isinstance(p.get("models"), list) else []
-catalog = {
-    "MiniMax-M2.5": "MiniMax M2.5",
-    "MiniMax-M2.5-highspeed": "MiniMax M2.5 Highspeed",
+m3_pricing_tiers = {
+    "standard": {
+        "up_to_512k": {"input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0},
+        "above_512k": {"input": 0.6, "output": 2.4, "cacheRead": 0.12, "cacheWrite": 0},
+    },
+    "priority": {
+        "up_to_512k": {"input": 0.45, "output": 1.8, "cacheRead": 0.09, "cacheWrite": 0},
+        "above_512k": {"input": 0.9, "output": 3.6, "cacheRead": 0.18, "cacheWrite": 0},
+    },
 }
-existing = {m.get("id") for m in models if isinstance(m, dict)}
-for mid in ("MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
-    if mid not in existing:
-        models.append({
-            "id": mid, "name": catalog.get(mid, mid), "reasoning": True, "input": ["text"],
-            "cost": {"input": 0.3, "output": 1.2, "cacheRead": 0.03, "cacheWrite": 0.12},
-            "contextWindow": 200000, "maxTokens": 8192
-        })
+catalog = {
+    "MiniMax-M3": {
+        "name": "MiniMax M3",
+        "input": ["text", "image"],
+        "cost": m3_pricing_tiers["standard"]["up_to_512k"],
+        "contextWindow": 1000000,
+        "maxTokens": 131072,
+    },
+    "MiniMax-M2.7": {
+        "name": "MiniMax M2.7",
+        "input": ["text"],
+        "cost": {"input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375},
+        "contextWindow": 204800,
+        "maxTokens": 131072,
+    },
+    "MiniMax-M2.7-highspeed": {
+        "name": "MiniMax M2.7 Highspeed",
+        "input": ["text"],
+        "cost": {"input": 0.6, "output": 2.4, "cacheRead": 0.06, "cacheWrite": 0.375},
+        "contextWindow": 204800,
+        "maxTokens": 131072,
+    },
+    "MiniMax-M2.5": {"name": "MiniMax M2.5"},
+    "MiniMax-M2.5-highspeed": {"name": "MiniMax M2.5 Highspeed"},
+}
+model_indexes = {m.get("id"): index for index, m in enumerate(models) if isinstance(m, dict)}
+for mid in ("MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
+    meta = catalog.get(mid, {})
+    definition = {
+        "id": mid, "name": meta.get("name", mid), "reasoning": True,
+        "input": meta.get("input", ["text"]),
+        "cost": meta.get("cost", {"input": 0.3, "output": 1.2, "cacheRead": 0.03, "cacheWrite": 0.12}),
+        "contextWindow": meta.get("contextWindow", 200000),
+        "maxTokens": meta.get("maxTokens", 8192)
+    }
+    index = model_indexes.get(mid)
+    if index is None:
+        model_indexes[mid] = len(models)
+        models.append(definition)
+    elif meta.get("contextWindow"):
+        models[index] = {**models[index], **definition}
 cfg["models"]["providers"][provider] = {
     **(p if isinstance(p, dict) else {}),
     "baseUrl": base_url,
-    "api": "anthropic-messages",
+    "api": api_type,
     "authHeader": True,
     "models": models
 }
@@ -5882,7 +5985,7 @@ EOF
     chmod 600 "$env_file"
 
     if [ "$provider" = "minimax" ] || [ "$provider" = "minimax-cn" ]; then
-        ensure_minimax_provider_config "$provider" "$model" "$config_file"
+        ensure_minimax_provider_config "$provider" "$model" "$config_file" "$api_type"
     fi
     
     # 设置默认模型
