@@ -1377,19 +1377,19 @@ cfg.models.providers ||= {};
 const p = cfg.models.providers[provider] || {};
 const models = Array.isArray(p.models) ? p.models : [];
 const catalog = {
-  'MiniMax-M2.5': { name: 'MiniMax M2.5' },
-  'MiniMax-M2.5-highspeed': { name: 'MiniMax M2.5 Highspeed' },
+  'MiniMax-M3': { name: 'MiniMax M3' },
+  'MiniMax-M2.7': { name: 'MiniMax M2.7' },
 };
 const modelIds = new Set(models.map(m => m.id));
-for (const id of ['MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
+for (const id of ['MiniMax-M3', 'MiniMax-M2.7']) {
   if (!modelIds.has(id)) {
     models.push({
       id,
       name: (catalog[id] && catalog[id].name) || id,
       reasoning: true,
-      input: ['text'],
-      cost: { input: 0.3, output: 1.2, cacheRead: 0.03, cacheWrite: 0.12 },
-      contextWindow: 200000,
+      input: id === 'MiniMax-M3' ? ['text', 'image', 'video'] : ['text'],
+      cost: id === 'MiniMax-M3' ? { input: 0.6, output: 2.4, cacheRead: 0.12 } : { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0.375 },
+      contextWindow: id === 'MiniMax-M3' ? 1000000 : 204800,
       maxTokens: 8192
     });
   }
@@ -1426,16 +1426,16 @@ cfg["models"].setdefault("providers", {})
 p = cfg["models"]["providers"].get(provider, {})
 models = p.get("models", []) if isinstance(p.get("models"), list) else []
 catalog = {
-    "MiniMax-M2.5": "MiniMax M2.5",
-    "MiniMax-M2.5-highspeed": "MiniMax M2.5 Highspeed",
+    "MiniMax-M3": "MiniMax M3",
+    "MiniMax-M2.7": "MiniMax M2.7",
 }
 existing = {m.get("id") for m in models if isinstance(m, dict)}
-for mid in ("MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
+for mid in ("MiniMax-M3", "MiniMax-M2.7"):
     if mid not in existing:
         models.append({
-            "id": mid, "name": catalog.get(mid, mid), "reasoning": True, "input": ["text"],
-            "cost": {"input": 0.3, "output": 1.2, "cacheRead": 0.03, "cacheWrite": 0.12},
-            "contextWindow": 200000, "maxTokens": 8192
+            "id": mid, "name": catalog.get(mid, mid), "reasoning": True, "input": (["text", "image", "video"] if mid == "MiniMax-M3" else ["text"]),
+            "cost": ({"input": 0.6, "output": 2.4, "cacheRead": 0.12} if mid == "MiniMax-M3" else {"input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375}),
+            "contextWindow": (1000000 if mid == "MiniMax-M3" else 204800), "maxTokens": 8192
         })
 cfg["models"]["providers"][provider] = {
     **(p if isinstance(p, dict) else {}),
@@ -2427,14 +2427,14 @@ setup_ai_provider() {
             read_secret_input "${YELLOW}输入 API Key: ${NC}" AI_KEY
             echo ""
             echo "选择模型:"
-            echo "  1) MiniMax-M2.5 (推荐，官方)"
-            echo "  2) MiniMax-M2.5-highspeed (高速)"
+            echo "  1) MiniMax-M3 (推荐，最新旗舰)"
+            echo "  2) MiniMax-M2.7"
             echo "  3) 自定义模型名称"
             echo -en "${YELLOW}选择模型 [1-3] (默认: 1): ${NC}"; read model_choice < "$TTY_INPUT"
             case $model_choice in
-                2) AI_MODEL="MiniMax-M2.5-highspeed" ;;
+                2) AI_MODEL="MiniMax-M2.7" ;;
                 3) echo -en "${YELLOW}输入模型名称: ${NC}"; read AI_MODEL < "$TTY_INPUT" ;;
-                *) AI_MODEL="MiniMax-M2.5" ;;
+                *) AI_MODEL="MiniMax-M3" ;;
             esac
             ;;
         13)
