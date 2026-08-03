@@ -5767,8 +5767,8 @@ const m3PricingTiers = {
 const catalog = {
   'MiniMax-M3': {
     name: 'MiniMax M3',
-    input: ['text', 'image'],
-    cost: m3PricingTiers.standard.upTo512k,
+    input: ['text', 'image', 'video'],
+    cost: m3PricingTiers.standard.above512k,
     contextWindow: 1000000,
     maxTokens: 131072,
   },
@@ -5854,8 +5854,8 @@ m3_pricing_tiers = {
 catalog = {
     "MiniMax-M3": {
         "name": "MiniMax M3",
-        "input": ["text", "image"],
-        "cost": m3_pricing_tiers["standard"]["up_to_512k"],
+        "input": ["text", "image", "video"],
+        "cost": m3_pricing_tiers["standard"]["above_512k"],
         "contextWindow": 1000000,
         "maxTokens": 131072,
     },
