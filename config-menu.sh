@@ -5757,7 +5757,7 @@ const models = Array.isArray(p.models) ? p.models : [];
 const m3PricingTiers = {
   standard: {
     upTo512k: { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0 },
-    above512k: { input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: 0 },
+    above512k: { input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: null },
   },
   priority: {
     upTo512k: { input: 0.45, output: 1.8, cacheRead: 0.09, cacheWrite: 0 },
@@ -5844,7 +5844,7 @@ models = p.get("models", []) if isinstance(p.get("models"), list) else []
 m3_pricing_tiers = {
     "standard": {
         "up_to_512k": {"input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0},
-        "above_512k": {"input": 0.6, "output": 2.4, "cacheRead": 0.12, "cacheWrite": 0},
+        "above_512k": {"input": 0.6, "output": 2.4, "cacheRead": 0.12, "cacheWrite": None},
     },
     "priority": {
         "up_to_512k": {"input": 0.45, "output": 1.8, "cacheRead": 0.09, "cacheWrite": 0},
