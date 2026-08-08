@@ -5754,21 +5754,11 @@ cfg.models.mode ||= 'merge';
 cfg.models.providers ||= {};
 const p = cfg.models.providers[provider] || {};
 const models = Array.isArray(p.models) ? p.models : [];
-const m3PricingTiers = {
-  standard: {
-    upTo512k: { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0 },
-    above512k: { input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: null },
-  },
-  priority: {
-    upTo512k: { input: 0.45, output: 1.8, cacheRead: 0.09, cacheWrite: 0 },
-    above512k: { input: 0.9, output: 3.6, cacheRead: 0.18, cacheWrite: 0 },
-  },
-};
 const catalog = {
   'MiniMax-M3': {
     name: 'MiniMax M3',
     input: ['text', 'image', 'video'],
-    cost: m3PricingTiers.standard.above512k,
+    cost: { input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: null },
     contextWindow: 1000000,
     maxTokens: 131072,
   },
@@ -5779,18 +5769,11 @@ const catalog = {
     contextWindow: 204800,
     maxTokens: 131072,
   },
-  'MiniMax-M2.7-highspeed': {
-    name: 'MiniMax M2.7 Highspeed',
-    input: ['text'],
-    cost: { input: 0.6, output: 2.4, cacheRead: 0.06, cacheWrite: 0.375 },
-    contextWindow: 204800,
-    maxTokens: 131072,
-  },
   'MiniMax-M2.5': { name: 'MiniMax M2.5' },
   'MiniMax-M2.5-highspeed': { name: 'MiniMax M2.5 Highspeed' },
 };
 const modelIndexes = new Map(models.map((entry, index) => [entry.id, index]));
-for (const id of ['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.7-highspeed', 'MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
+for (const id of ['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
   const meta = catalog[id] || {};
   const definition = {
     id,
@@ -5841,21 +5824,11 @@ cfg["models"].setdefault("mode", "merge")
 cfg["models"].setdefault("providers", {})
 p = cfg["models"]["providers"].get(provider, {})
 models = p.get("models", []) if isinstance(p.get("models"), list) else []
-m3_pricing_tiers = {
-    "standard": {
-        "up_to_512k": {"input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0},
-        "above_512k": {"input": 0.6, "output": 2.4, "cacheRead": 0.12, "cacheWrite": None},
-    },
-    "priority": {
-        "up_to_512k": {"input": 0.45, "output": 1.8, "cacheRead": 0.09, "cacheWrite": 0},
-        "above_512k": {"input": 0.9, "output": 3.6, "cacheRead": 0.18, "cacheWrite": 0},
-    },
-}
 catalog = {
     "MiniMax-M3": {
         "name": "MiniMax M3",
         "input": ["text", "image", "video"],
-        "cost": m3_pricing_tiers["standard"]["above_512k"],
+        "cost": {"input": 0.6, "output": 2.4, "cacheRead": 0.12, "cacheWrite": None},
         "contextWindow": 1000000,
         "maxTokens": 131072,
     },
@@ -5866,18 +5839,11 @@ catalog = {
         "contextWindow": 204800,
         "maxTokens": 131072,
     },
-    "MiniMax-M2.7-highspeed": {
-        "name": "MiniMax M2.7 Highspeed",
-        "input": ["text"],
-        "cost": {"input": 0.6, "output": 2.4, "cacheRead": 0.06, "cacheWrite": 0.375},
-        "contextWindow": 204800,
-        "maxTokens": 131072,
-    },
     "MiniMax-M2.5": {"name": "MiniMax M2.5"},
     "MiniMax-M2.5-highspeed": {"name": "MiniMax M2.5 Highspeed"},
 }
 model_indexes = {m.get("id"): index for index, m in enumerate(models) if isinstance(m, dict)}
-for mid in ("MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
+for mid in ("MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
     meta = catalog.get(mid, {})
     definition = {
         "id": mid, "name": meta.get("name", mid), "reasoning": True,
