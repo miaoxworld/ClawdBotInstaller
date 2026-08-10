@@ -2418,7 +2418,7 @@ setup_ai_provider() {
             read_secret_input "${YELLOW}输入 API Key: ${NC}" AI_KEY
             echo ""
             echo "选择模型:"
-            echo "  1) MiniMax-M3 (推荐，最新旗舰)"
+            echo "  1) MiniMax-M3 (Recommended, latest flagship)"
             echo "  2) MiniMax-M2.7"
             echo "  3) 自定义模型名称"
             echo -en "${YELLOW}选择模型 [1-3] (默认: 1): ${NC}"; read model_choice < "$TTY_INPUT"

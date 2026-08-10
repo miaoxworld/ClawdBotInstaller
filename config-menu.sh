@@ -2861,7 +2861,7 @@ config_minimax() {
     echo ""
     echo -e "${CYAN}选择模型:${NC}"
     echo ""
-    print_menu_item "1" "MiniMax-M3 (推荐，最新旗舰)" "⭐"
+    print_menu_item "1" "MiniMax-M3 (Recommended, latest flagship)" "⭐"
     print_menu_item "2" "MiniMax-M2.7" "🔹"
     print_menu_item "3" "Custom model name" "✏️"
     echo ""
