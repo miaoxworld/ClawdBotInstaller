@@ -1352,7 +1352,7 @@ init_openclaw_config() {
 # 为 MiniMax 写入官方兼容 provider 配置，避免旧版本出现 Unknown model
 ensure_minimax_provider_config() {
     local provider="$1"   # minimax|minimax-cn
-    local model="$2"      # MiniMax-M2.5 / MiniMax-M2.5-highspeed
+    local model="$2"      # MiniMax-M3 / MiniMax-M2.7
     local config_file="$3"
     local base_url="https://api.minimax.io/anthropic"
     if [ "$provider" = "minimax-cn" ]; then
@@ -1377,22 +1377,14 @@ cfg.models.providers ||= {};
 const p = cfg.models.providers[provider] || {};
 const models = Array.isArray(p.models) ? p.models : [];
 const catalog = {
-  'MiniMax-M3': { name: 'MiniMax M3' },
-  'MiniMax-M2.7': { name: 'MiniMax M2.7' },
+  'MiniMax-M3': { name: 'MiniMax M3', reasoning: true, input: ['text', 'image', 'video'], cost: { input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: null }, contextWindow: 1000000, maxTokens: 8192 },
+  'MiniMax-M2.7': { name: 'MiniMax M2.7', reasoning: true, input: ['text'], cost: { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0.375 }, contextWindow: 204800, maxTokens: 8192 },
 };
-const modelIds = new Set(models.map(m => m.id));
 for (const id of ['MiniMax-M3', 'MiniMax-M2.7']) {
-  if (!modelIds.has(id)) {
-    models.push({
-      id,
-      name: (catalog[id] && catalog[id].name) || id,
-      reasoning: true,
-      input: id === 'MiniMax-M3' ? ['text', 'image', 'video'] : ['text'],
-      cost: id === 'MiniMax-M3' ? { input: 0.6, output: 2.4, cacheRead: 0.12 } : { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0.375 },
-      contextWindow: id === 'MiniMax-M3' ? 1000000 : 204800,
-      maxTokens: 8192
-    });
-  }
+  const existing = models.find(m => m && m.id === id);
+  const refreshed = { id, ...catalog[id] };
+  if (existing) Object.assign(existing, refreshed);
+  else models.push(refreshed);
 }
 cfg.models.providers[provider] = {
   ...p,
@@ -1426,17 +1418,16 @@ cfg["models"].setdefault("providers", {})
 p = cfg["models"]["providers"].get(provider, {})
 models = p.get("models", []) if isinstance(p.get("models"), list) else []
 catalog = {
-    "MiniMax-M3": "MiniMax M3",
-    "MiniMax-M2.7": "MiniMax M2.7",
+    "MiniMax-M3": {"name": "MiniMax M3", "reasoning": True, "input": ["text", "image", "video"], "cost": {"input": 0.6, "output": 2.4, "cacheRead": 0.12, "cacheWrite": None}, "contextWindow": 1000000, "maxTokens": 8192},
+    "MiniMax-M2.7": {"name": "MiniMax M2.7", "reasoning": True, "input": ["text"], "cost": {"input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375}, "contextWindow": 204800, "maxTokens": 8192},
 }
-existing = {m.get("id") for m in models if isinstance(m, dict)}
 for mid in ("MiniMax-M3", "MiniMax-M2.7"):
-    if mid not in existing:
-        models.append({
-            "id": mid, "name": catalog.get(mid, mid), "reasoning": True, "input": (["text", "image", "video"] if mid == "MiniMax-M3" else ["text"]),
-            "cost": ({"input": 0.6, "output": 2.4, "cacheRead": 0.12} if mid == "MiniMax-M3" else {"input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375}),
-            "contextWindow": (1000000 if mid == "MiniMax-M3" else 204800), "maxTokens": 8192
-        })
+    refreshed = {"id": mid, **catalog[mid]}
+    existing = next((item for item in models if isinstance(item, dict) and item.get("id") == mid), None)
+    if existing is not None:
+        existing.update(refreshed)
+    else:
+        models.append(refreshed)
 cfg["models"]["providers"][provider] = {
     **(p if isinstance(p, dict) else {}),
     "baseUrl": base_url,
