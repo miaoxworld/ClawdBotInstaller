@@ -1352,7 +1352,7 @@ init_openclaw_config() {
 # 为 MiniMax 写入官方兼容 provider 配置，避免旧版本出现 Unknown model
 ensure_minimax_provider_config() {
     local provider="$1"   # minimax|minimax-cn
-    local model="$2"      # MiniMax-M2.5 / MiniMax-M2.5-highspeed
+    local model="$2"      # MiniMax-M3 / MiniMax-M2.7
     local config_file="$3"
     local base_url="https://api.minimax.io/anthropic"
     if [ "$provider" = "minimax-cn" ]; then
@@ -1377,22 +1377,14 @@ cfg.models.providers ||= {};
 const p = cfg.models.providers[provider] || {};
 const models = Array.isArray(p.models) ? p.models : [];
 const catalog = {
-  'MiniMax-M2.5': { name: 'MiniMax M2.5' },
-  'MiniMax-M2.5-highspeed': { name: 'MiniMax M2.5 Highspeed' },
+  'MiniMax-M3': { name: 'MiniMax M3', reasoning: true, input: ['text', 'image', 'video'], cost: { input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: null }, contextWindow: 1000000, maxTokens: 8192 },
+  'MiniMax-M2.7': { name: 'MiniMax M2.7', reasoning: true, input: ['text'], cost: { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0.375 }, contextWindow: 204800, maxTokens: 8192 },
 };
-const modelIds = new Set(models.map(m => m.id));
-for (const id of ['MiniMax-M2.5', 'MiniMax-M2.5-highspeed']) {
-  if (!modelIds.has(id)) {
-    models.push({
-      id,
-      name: (catalog[id] && catalog[id].name) || id,
-      reasoning: true,
-      input: ['text'],
-      cost: { input: 0.3, output: 1.2, cacheRead: 0.03, cacheWrite: 0.12 },
-      contextWindow: 200000,
-      maxTokens: 8192
-    });
-  }
+for (const id of ['MiniMax-M3', 'MiniMax-M2.7']) {
+  const existing = models.find(m => m && m.id === id);
+  const refreshed = { id, ...catalog[id] };
+  if (existing) Object.assign(existing, refreshed);
+  else models.push(refreshed);
 }
 cfg.models.providers[provider] = {
   ...p,
@@ -1426,17 +1418,16 @@ cfg["models"].setdefault("providers", {})
 p = cfg["models"]["providers"].get(provider, {})
 models = p.get("models", []) if isinstance(p.get("models"), list) else []
 catalog = {
-    "MiniMax-M2.5": "MiniMax M2.5",
-    "MiniMax-M2.5-highspeed": "MiniMax M2.5 Highspeed",
+    "MiniMax-M3": {"name": "MiniMax M3", "reasoning": True, "input": ["text", "image", "video"], "cost": {"input": 0.6, "output": 2.4, "cacheRead": 0.12, "cacheWrite": None}, "contextWindow": 1000000, "maxTokens": 8192},
+    "MiniMax-M2.7": {"name": "MiniMax M2.7", "reasoning": True, "input": ["text"], "cost": {"input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375}, "contextWindow": 204800, "maxTokens": 8192},
 }
-existing = {m.get("id") for m in models if isinstance(m, dict)}
-for mid in ("MiniMax-M2.5", "MiniMax-M2.5-highspeed"):
-    if mid not in existing:
-        models.append({
-            "id": mid, "name": catalog.get(mid, mid), "reasoning": True, "input": ["text"],
-            "cost": {"input": 0.3, "output": 1.2, "cacheRead": 0.03, "cacheWrite": 0.12},
-            "contextWindow": 200000, "maxTokens": 8192
-        })
+for mid in ("MiniMax-M3", "MiniMax-M2.7"):
+    refreshed = {"id": mid, **catalog[mid]}
+    existing = next((item for item in models if isinstance(item, dict) and item.get("id") == mid), None)
+    if existing is not None:
+        existing.update(refreshed)
+    else:
+        models.append(refreshed)
 cfg["models"]["providers"][provider] = {
     **(p if isinstance(p, dict) else {}),
     "baseUrl": base_url,
@@ -2427,14 +2418,14 @@ setup_ai_provider() {
             read_secret_input "${YELLOW}输入 API Key: ${NC}" AI_KEY
             echo ""
             echo "选择模型:"
-            echo "  1) MiniMax-M2.5 (推荐，官方)"
-            echo "  2) MiniMax-M2.5-highspeed (高速)"
+            echo "  1) MiniMax-M3 (Recommended, latest flagship)"
+            echo "  2) MiniMax-M2.7"
             echo "  3) 自定义模型名称"
             echo -en "${YELLOW}选择模型 [1-3] (默认: 1): ${NC}"; read model_choice < "$TTY_INPUT"
             case $model_choice in
-                2) AI_MODEL="MiniMax-M2.5-highspeed" ;;
+                2) AI_MODEL="MiniMax-M2.7" ;;
                 3) echo -en "${YELLOW}输入模型名称: ${NC}"; read AI_MODEL < "$TTY_INPUT" ;;
-                *) AI_MODEL="MiniMax-M2.5" ;;
+                *) AI_MODEL="MiniMax-M3" ;;
             esac
             ;;
         13)
