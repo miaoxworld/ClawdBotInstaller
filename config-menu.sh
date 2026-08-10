@@ -2863,16 +2863,16 @@ config_minimax() {
     echo ""
     print_menu_item "1" "MiniMax-M3 (推荐，最新旗舰)" "⭐"
     print_menu_item "2" "MiniMax-M2.7" "🔹"
-    print_menu_item "3" "自定义模型名称" "✏️"
+    print_menu_item "3" "Custom model name" "✏️"
     echo ""
 
-    read -p "$(echo -e "${YELLOW}请选择 [1-3] (默认: 1): ${NC}")" model_choice < "$TTY_INPUT"
+    read -p "$(echo -e "${YELLOW}Select [1-3] (default: 1): ${NC}")" model_choice < "$TTY_INPUT"
     model_choice=${model_choice:-1}
 
     case $model_choice in
         1) model="MiniMax-M3" ;;
         2) model="MiniMax-M2.7" ;;
-        3) read -p "$(echo -e "${YELLOW}输入模型名称: ${NC}")" model < "$TTY_INPUT" ;;
+        3) read -p "$(echo -e "${YELLOW}Enter model name: ${NC}")" model < "$TTY_INPUT" ;;
         *) model="MiniMax-M3" ;;
     esac
     
